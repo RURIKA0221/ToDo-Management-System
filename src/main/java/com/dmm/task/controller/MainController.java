@@ -5,13 +5,25 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import com.dmm.task.data.entity.Tasks;
+import com.dmm.task.data.repository.TasksRepository;
 
 @Controller
 public class MainController {
+	@Autowired
+	private TasksRepository task;
+	
 	@GetMapping("/main")
-	public String main() {
+	public String main(Model model) {
+		
 		// 2次元表になるので、ListのListを用意する
 		List<List> calendar = new ArrayList<List>();
 		// 1週間分のLocalDateを格納するListを用意する
@@ -44,7 +56,16 @@ public class MainController {
             }
             calendar.add(week);  
         }
+		model.addAttribute("matrix", calendar);
 		
+		List<Tasks> list = task.findAll(Sort.by(Sort.Direction.DESC, "id"));
+		
+		// 日付とタスクを紐付ける
+	    MultiValueMap<LocalDate, Tasks> tasks = new LinkedMultiValueMap<LocalDate, Tasks>();
+
+	    // コレクションのデータをHTMLに連携
+	    model.addAttribute("tasks.get(day)", list);
+
 		return "main";
 	}
 }
