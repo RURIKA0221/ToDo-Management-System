@@ -2,6 +2,7 @@ package com.dmm.task.controller;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +20,7 @@ import com.dmm.task.data.repository.TasksRepository;
 @Controller
 public class MainController {
 	@Autowired
-	private TasksRepository task;
+	private TasksRepository tasks;
 	
 	@GetMapping("/main")
 	public String main(Model model) {
@@ -33,17 +34,24 @@ public class MainController {
 		// 曜日を表すDayOfWeekを取得し、上で取得したLocalDateに曜日の値（DayOfWeek#getValue)をマイナスして前月分のLocalDateを求める
 		DayOfWeek firstDayOfWeek = firstDayOfMonth.getDayOfWeek();
 		LocalDate current = firstDayOfMonth.minusDays(firstDayOfWeek.getValue());
+		
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM");
+		model.addAttribute("month",dateTimeFormatter.format(firstDayOfMonth));
+		
+		model.addAttribute("prev",firstDayOfMonth.minusMonths(1));
+		model.addAttribute("next",firstDayOfMonth.plusMonths(1));
+		
 		while (true) {
 			// 1日ずつ増やしてLocalDateを求めていき、2．で作成したListへ格納していき、1週間分詰めたら1．のリストへ格納する
-			current = current.plusDays(1);
 			week.add(current);
+			current = current.plusDays(1);
 			// 2週目以降は単純に1日ずつ日を増やしながらLocalDateを求めてListへ格納していき、
 			// 土曜日になったら1．のリストへ格納して新しいListを生成する（月末を求めるにはLocalDate#lengthOfMonth()を使う）
 			if(week.size()==7) {
 				calendar.add(week);
 				week = new ArrayList<>();
 			}
-			if(current.getDayOfMonth() == firstDayOfMonth.lengthOfMonth()) {
+			if(current.getDayOfMonth() == firstDayOfMonth.lengthOfMonth() &&current.getMonth()==firstDayOfMonth.getMonth()) {
 				break;				
 			}
 		}
@@ -58,13 +66,13 @@ public class MainController {
         }
 		model.addAttribute("matrix", calendar);
 		
-		List<Tasks> list = task.findAll(Sort.by(Sort.Direction.DESC, "id"));
+		List<Tasks> list = tasks.findAll(Sort.by(Sort.Direction.DESC, "id"));
 		
 		// 日付とタスクを紐付ける
 	    MultiValueMap<LocalDate, Tasks> tasks = new LinkedMultiValueMap<LocalDate, Tasks>();
 
 	    // コレクションのデータをHTMLに連携
-	    model.addAttribute("tasks.get(day)", list);
+	    model.addAttribute("tasks", tasks);
 
 		return "main";
 	}

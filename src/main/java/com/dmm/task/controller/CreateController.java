@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import com.dmm.task.data.entity.Tasks;
 import com.dmm.task.data.repository.TasksRepository;
@@ -15,20 +16,29 @@ import com.dmm.task.data.repository.TasksRepository;
 public class CreateController {
 	
 	@Autowired
-	private TasksRepository task;
+	private TasksRepository tasks;
 	
-	@GetMapping("/create")
-	String loginForm(@Validated BindingResult bindingResult,
-			@AuthenticationPrincipal com.dmm.task.service.AccountUserDetails user, Model model) {
+	@GetMapping("main/create/{date}")
+	String createForm() {
 		
-		Tasks tasks = new Tasks();
-		tasks.setName(tasks.getName());
-		tasks.setTitle(tasks.getTitle());
-		tasks.setText(tasks.getText());
-		tasks.setDate(tasks.getDate());
+		return "main/create/{date}";
+	}
+	
+	@PostMapping("main/create/{date}")
+	String createTasks(@Validated BindingResult bindingResult,
+			@AuthenticationPrincipal com.dmm.task.service.AccountUserDetails user, Model model) {
+		if (bindingResult.hasErrors()) {
+			return "main";
+		}
+		
+		Tasks task = new Tasks();
+		task.setName(user.getName());
+		task.setTitle(task.getTitle());
+		task.setText(task.getText());
+		task.setDate(task.getDate());
 
-		task.save(tasks);
+		tasks.save(task);
 
-		return "create";
+		return "redirect:/main?date=";
 	}
 }
