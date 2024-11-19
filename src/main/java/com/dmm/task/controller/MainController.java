@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,58 +22,66 @@ import com.dmm.task.data.repository.TasksRepository;
 public class MainController {
 	@Autowired
 	private TasksRepository tasks;
-	
+
 	@GetMapping("/main")
-	public String main(Model model) {
-		
+	public String main(Model model, @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+
+        LocalDate targetDate = date;
+     // 指定された日付がない場合は、現在の日付を基準とする
+        if(date !=null) {
+        	targetDate = LocalDate.now();
+        }
 		// 2次元表になるので、ListのListを用意する
 		List<List> calendar = new ArrayList<List>();
 		// 1週間分のLocalDateを格納するListを用意する
 		List<LocalDate> week = new ArrayList<LocalDate>();
+
 		// 当日のインスタンスを取得したあと、その月の1日のインスタンスを得る
-		LocalDate firstDayOfMonth = LocalDate.now().withDayOfMonth(1);
+		LocalDate firstDayOfMonth = targetDate.withDayOfMonth(1);
+
 		// 曜日を表すDayOfWeekを取得し、上で取得したLocalDateに曜日の値（DayOfWeek#getValue)をマイナスして前月分のLocalDateを求める
 		DayOfWeek firstDayOfWeek = firstDayOfMonth.getDayOfWeek();
 		LocalDate current = firstDayOfMonth.minusDays(firstDayOfWeek.getValue());
-		
+
 		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM");
-		model.addAttribute("month",dateTimeFormatter.format(firstDayOfMonth));
-		
-		model.addAttribute("prev",firstDayOfMonth.minusMonths(1));
-		model.addAttribute("next",firstDayOfMonth.plusMonths(1));
-		
+		model.addAttribute("month", dateTimeFormatter.format(firstDayOfMonth));
+
+		model.addAttribute("prev", firstDayOfMonth.minusMonths(1));
+		model.addAttribute("next", firstDayOfMonth.plusMonths(1));
+
 		while (true) {
 			// 1日ずつ増やしてLocalDateを求めていき、2．で作成したListへ格納していき、1週間分詰めたら1．のリストへ格納する
 			week.add(current);
 			current = current.plusDays(1);
 			// 2週目以降は単純に1日ずつ日を増やしながらLocalDateを求めてListへ格納していき、
 			// 土曜日になったら1．のリストへ格納して新しいListを生成する（月末を求めるにはLocalDate#lengthOfMonth()を使う）
-			if(week.size()==7) {
+			if (week.size() == 7) {
 				calendar.add(week);
 				week = new ArrayList<>();
 			}
-			if(current.getDayOfMonth() == firstDayOfMonth.lengthOfMonth() &&current.getMonth()==firstDayOfMonth.getMonth()) {
-				break;				
+			if (current.getDayOfMonth() == firstDayOfMonth.lengthOfMonth()
+					&& current.getMonth() == firstDayOfMonth.getMonth()) {
+				break;
 			}
 		}
 		// 最終週の翌月分をDayOfWeekの値を使って計算し、6．で生成したリストへ格納し、最後に1．で生成したリストへ格納する
 		if (!week.isEmpty()) {
-            int remainDays = DayOfWeek.SATURDAY.getValue() - week.get(week.size() - 1).getDayOfWeek().getValue();
-            for (int i = 0; i < remainDays; i++) {
-                week.add(current);
-                current = current.plusDays(1);
-            }
-            calendar.add(week);  
-        }
+			int remainDays = DayOfWeek.SATURDAY.getValue() - week.get(week.size() - 1).getDayOfWeek().getValue();
+			for (int i = 0; i < remainDays; i++) {
+				week.add(current);
+				current = current.plusDays(1);
+			}
+			calendar.add(week);
+		}
 		model.addAttribute("matrix", calendar);
-		
-		List<Tasks> list = tasks.findAll(Sort.by(Sort.Direction.DESC, "id"));
-		
-		// 日付とタスクを紐付ける
-	    MultiValueMap<LocalDate, Tasks> tasks = new LinkedMultiValueMap<LocalDate, Tasks>();
 
-	    // コレクションのデータをHTMLに連携
-	    model.addAttribute("tasks", tasks);
+		List<Tasks> list = tasks.findAll(Sort.by(Sort.Direction.DESC, "id"));
+
+		// 日付とタスクを紐付ける
+		MultiValueMap<LocalDate, Tasks> tasks = new LinkedMultiValueMap<LocalDate, Tasks>();
+
+		// コレクションのデータをHTMLに連携
+		model.addAttribute("tasks", tasks);
 
 		return "main";
 	}
