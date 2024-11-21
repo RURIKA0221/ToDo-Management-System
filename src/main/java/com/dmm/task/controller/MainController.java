@@ -84,10 +84,10 @@ public class MainController {
 		List<Tasks> list = tasks.findAll(Sort.by(Sort.Direction.DESC, "id"));
 
 		// 日付とタスクを紐付ける
-		MultiValueMap<LocalDate, Tasks> tasks = new LinkedMultiValueMap<LocalDate, Tasks>();
+		MultiValueMap<LocalDate, Tasks> taskMap = new LinkedMultiValueMap<LocalDate, Tasks>();
 
 		// コレクションのデータをHTMLに連携
-		model.addAttribute("tasks", tasks);
+        model.addAttribute("tasks", taskMap);
 
 		return "main";
 	}

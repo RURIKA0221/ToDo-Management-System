@@ -10,11 +10,13 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.dmm.task.data.entity.Tasks;
 import com.dmm.task.data.repository.TasksRepository;
+import com.dmm.task.form.TaskForm;
+import com.dmm.task.service.AccountUserDetails;
 
 @Controller
 public class CreateController {
@@ -23,7 +25,7 @@ public class CreateController {
 	private TasksRepository tasks;
 	
 	@GetMapping("main/create/{date}")
-	String createForm(@RequestParam(value = "date", required = false) LocalDate date,Model model) {
+	String createForm(@PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate date,Model model) {
 		if (date == null) {
 		    date = LocalDate.now();
 		}
@@ -33,17 +35,20 @@ public class CreateController {
 	}
 	
 	@PostMapping("main/create/{date}")
-	String createTasks(@Validated BindingResult bindingResult,
-			@AuthenticationPrincipal com.dmm.task.service.AccountUserDetails user,
+	String createTasks(@Validated BindingResult bindingResult,@Validated TaskForm taskForm,
+			@AuthenticationPrincipal AccountUserDetails user,
 			@DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date, Model model) {
 		if (bindingResult.hasErrors()) {
 			return "main";
 		}
 		
+		model.addAttribute("tasks", tasks);
+		model.addAttribute("taskForm", taskForm);
+		
 		Tasks task = new Tasks();
 		task.setName(user.getName());
-		task.setTitle(task.getTitle());
-		task.setText(task.getText());
+		task.setTitle(taskForm.getTitle());
+		task.setText(taskForm.getText());
 		task.setDone(false); // 初期状態では未完了
 		task.setDate(task.getDate());
 
