@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,8 +17,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import com.dmm.task.data.entity.Tasks;
 import com.dmm.task.data.repository.TasksRepository;
 
+
 @Controller
 public class MainController {
+	
 	@Autowired
 	private TasksRepository tasks;
 
@@ -81,7 +82,7 @@ public class MainController {
 		}
 		model.addAttribute("matrix", calendar);
 
-		List<Tasks> list = tasks.findAll(Sort.by(Sort.Direction.DESC, "id"));
+		
 
 		// 日付とタスクを紐付ける
 		MultiValueMap<LocalDate, Tasks> taskMap = new LinkedMultiValueMap<LocalDate, Tasks>();

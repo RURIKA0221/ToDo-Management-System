@@ -7,7 +7,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,13 +33,11 @@ public class CreateController {
 		return "create";
 	}
 	
-	@PostMapping("main/create/{date}")
-	String createTasks(@Validated BindingResult bindingResult,@Validated TaskForm taskForm,
+	@PostMapping("main/create")
+	String createTasks(@Validated TaskForm taskForm,
 			@AuthenticationPrincipal AccountUserDetails user,
-			@DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date, Model model) {
-		if (bindingResult.hasErrors()) {
-			return "main";
-		}
+			Model model) {
+		
 		
 		model.addAttribute("tasks", tasks);
 		model.addAttribute("taskForm", taskForm);
@@ -50,10 +47,10 @@ public class CreateController {
 		task.setTitle(taskForm.getTitle());
 		task.setText(taskForm.getText());
 		task.setDone(false); // 初期状態では未完了
-		task.setDate(task.getDate());
+		task.setDate(taskForm.getDate());
 
 		tasks.save(task);
 
-		return "redirect:/main/" + date;
+		return "redirect:/main";
 	}
 }
