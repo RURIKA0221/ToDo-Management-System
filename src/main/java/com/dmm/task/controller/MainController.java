@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.LinkedMultiValueMap;
@@ -16,34 +17,35 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import com.dmm.task.data.entity.Tasks;
 import com.dmm.task.data.repository.TasksRepository;
-
+import com.dmm.task.service.AccountUserDetails;
 
 @Controller
 public class MainController {
-	
+
 	@Autowired
 	private TasksRepository tasks;
 
 	@GetMapping("/main")
-	public String main(Model model, @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
-
+	public String main(Model model, @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+			@AuthenticationPrincipal AccountUserDetails user) {
+		
 		LocalDate targetDate;
 		// 指定された日付がない場合は、現在の日付を基準とする
 		// 今月 or 前月 or 翌月を判定
-	    if (date == null) {  // 今月
-	        // その月の1日を取得する
-	        targetDate = LocalDate.now();  // 現在日時を取得
-	        targetDate = targetDate.withDayOfMonth(1);  // 現在日時からその月の1日を取得
-	    } else {  // 前月 or 翌月と判断
-	        targetDate = date;  // 引数で受け取った日付をそのまま使う
-	    }
+		if (date == null) { // 今月
+			// その月の1日を取得する
+			targetDate = LocalDate.now(); // 現在日時を取得
+			targetDate = targetDate.withDayOfMonth(1); // 現在日時からその月の1日を取得
+		} else { // 前月 or 翌月と判断
+			targetDate = date; // 引数で受け取った日付をそのまま使う
+		}
 
 		// 当日のインスタンスを取得したあと、その月の1日のインスタンスを得る
 		LocalDate firstDayOfMonth = targetDate.withDayOfMonth(1);
 
 		// 曜日を表すDayOfWeekを取得し、上で取得したLocalDateに曜日の値（DayOfWeek#getValue)をマイナスして前月分のLocalDateを求める
 		DayOfWeek firstDayOfWeek = targetDate.getDayOfWeek();
-		LocalDate current =targetDate.minusDays(firstDayOfWeek.getValue());
+		LocalDate current = targetDate.minusDays(firstDayOfWeek.getValue());
 
 		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM");
 		model.addAttribute("month", dateTimeFormatter.format(targetDate));
@@ -82,13 +84,23 @@ public class MainController {
 		}
 		model.addAttribute("matrix", calendar);
 
-		
+		List<Tasks> taskList;
+		if (user.getUsername() == "user") {
+			taskList = TasksRepository.findAdminAndUserTasksByDateBetween(firstDayOfMonth,
+					firstDayOfMonth.plusMonths(1), "user");
+		} else if (user.getUsername() == "admin") {
+			taskList = TasksRepository.findByDateBetween(firstDayOfMonth, firstDayOfMonth.plusMonths(1), "admin");
+		}
 
+		
 		// 日付とタスクを紐付ける
 		MultiValueMap<LocalDate, Tasks> taskMap = new LinkedMultiValueMap<LocalDate, Tasks>();
 
+		for (Tasks task : taskList) {
+            taskMap.add(task.getDate(), task);
+        }
 		// コレクションのデータをHTMLに連携
-        model.addAttribute("tasks", taskMap);
+		model.addAttribute("tasks", taskMap);
 
 		return "main";
 	}
