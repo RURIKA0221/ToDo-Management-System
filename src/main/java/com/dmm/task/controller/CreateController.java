@@ -19,29 +19,23 @@ import com.dmm.task.service.AccountUserDetails;
 
 @Controller
 public class CreateController {
-	
+
 	@Autowired
 	private TasksRepository tasks;
-	
+
 	@GetMapping("main/create/{date}")
-	String createForm(@PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate date,Model model) {
-		if (date == null) {
-		    date = LocalDate.now();
-		}
-        // モデルにフォーム用データを設定
-        model.addAttribute("date", date);
+	String createForm(@PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date, Model model) {
+		// モデルにフォーム用データを設定
+		model.addAttribute("date", date);
 		return "create";
 	}
-	
+
 	@PostMapping("main/create")
-	String createTasks(@Validated TaskForm taskForm,
-			@AuthenticationPrincipal AccountUserDetails user,
-			Model model) {
-		
-		
+	String createTasks(@Validated TaskForm taskForm, @AuthenticationPrincipal AccountUserDetails user, Model model) {
+
 		model.addAttribute("tasks", tasks);
 		model.addAttribute("taskForm", taskForm);
-		
+
 		Tasks task = new Tasks();
 		task.setName(user.getName());
 		task.setTitle(taskForm.getTitle());

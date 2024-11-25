@@ -18,6 +18,6 @@ public class TaskForm {
 	private String text;
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	private LocalDate date;
-	
+
 	private boolean done;
 }

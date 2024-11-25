@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,7 +29,7 @@ public class MainController {
 	@GetMapping("/main")
 	public String main(Model model, @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
 			@AuthenticationPrincipal AccountUserDetails user) {
-		
+
 		LocalDate targetDate;
 		// 指定された日付がない場合は、現在の日付を基準とする
 		// 今月 or 前月 or 翌月を判定
@@ -84,21 +85,33 @@ public class MainController {
 		}
 		model.addAttribute("matrix", calendar);
 
-		List<Tasks> taskList;
-		if (user.getUsername() == "user") {
-			taskList = TasksRepository.findAdminAndUserTasksByDateBetween(firstDayOfMonth,
-					firstDayOfMonth.plusMonths(1), "user");
-		} else if (user.getUsername() == "admin") {
-			taskList = TasksRepository.findByDateBetween(firstDayOfMonth, firstDayOfMonth.plusMonths(1), "admin");
+		LocalDate lastDayOfMonth = firstDayOfMonth.plusMonths(1).minusDays(1);
+
+		List<Tasks> taskList = new ArrayList<Tasks>();
+
+		// adminかどうかの処理
+		boolean isAdmin = false;
+		for (GrantedAuthority authority : user.getAuthorities()) {
+			if ("ROLE_ADMIN".equals(authority.getAuthority())) {
+				isAdmin = true;
+				break;
+			}
 		}
 
-		
+		if (isAdmin) {
+			// adminなら全タスク取得
+			taskList = tasks.findByDateBetween2(firstDayOfMonth, lastDayOfMonth);
+		} else {
+			// userなら自身のタスクのみ取得
+			taskList = tasks.findByDateBetween(firstDayOfMonth, lastDayOfMonth, user.getName());
+		}
+
 		// 日付とタスクを紐付ける
 		MultiValueMap<LocalDate, Tasks> taskMap = new LinkedMultiValueMap<LocalDate, Tasks>();
 
 		for (Tasks task : taskList) {
-            taskMap.add(task.getDate(), task);
-        }
+			taskMap.add(task.getDate(), task);
+		}
 		// コレクションのデータをHTMLに連携
 		model.addAttribute("tasks", taskMap);
 

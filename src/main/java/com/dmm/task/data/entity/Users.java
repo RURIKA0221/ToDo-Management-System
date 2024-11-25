@@ -15,5 +15,4 @@ public class Users {
 	public String password;
 	public String name;
 	public String roleName;
-	public boolean isAdmin;
 }
