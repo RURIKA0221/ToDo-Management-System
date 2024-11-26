@@ -46,9 +46,11 @@ public class MainController {
 
 		// 曜日を表すDayOfWeekを取得し、上で取得したLocalDateに曜日の値（DayOfWeek#getValue)をマイナスして前月分のLocalDateを求める
 		DayOfWeek firstDayOfWeek = targetDate.getDayOfWeek();
+		//ここでtask用に1週目の前月分の開始日を設定
+		LocalDate first = targetDate.minusDays(firstDayOfWeek.getValue());
 		LocalDate current = targetDate.minusDays(firstDayOfWeek.getValue());
 
-		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM");
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy年MM月");
 		model.addAttribute("month", dateTimeFormatter.format(targetDate));
 
 		model.addAttribute("prev", firstDayOfMonth.minusMonths(1));
@@ -69,8 +71,7 @@ public class MainController {
 				calendar.add(week);
 				week = new ArrayList<>();
 			}
-			if (current.getDayOfMonth() == firstDayOfMonth.lengthOfMonth()
-					&& current.getMonth() == firstDayOfMonth.getMonth()) {
+			if (current.compareTo(firstDayOfMonth.plusMonths(1).with(DayOfWeek.SATURDAY)) > 0) {
 				break;
 			}
 		}
@@ -85,7 +86,8 @@ public class MainController {
 		}
 		model.addAttribute("matrix", calendar);
 
-		LocalDate lastDayOfMonth = firstDayOfMonth.plusMonths(1).minusDays(1);
+		//ここでtask用に最終週の翌月分の終了日を設定
+		LocalDate last = firstDayOfMonth.plusMonths(1).with(DayOfWeek.SATURDAY);
 
 		List<Tasks> taskList = new ArrayList<Tasks>();
 
@@ -100,10 +102,10 @@ public class MainController {
 
 		if (isAdmin) {
 			// adminなら全タスク取得
-			taskList = tasks.findByDateBetween2(firstDayOfMonth, lastDayOfMonth);
+			taskList = tasks.findByDateBetween2(first, last);
 		} else {
 			// userなら自身のタスクのみ取得
-			taskList = tasks.findByDateBetween(firstDayOfMonth, lastDayOfMonth, user.getName());
+			taskList = tasks.findByDateBetween(first, last, user.getName());
 		}
 
 		// 日付とタスクを紐付ける
