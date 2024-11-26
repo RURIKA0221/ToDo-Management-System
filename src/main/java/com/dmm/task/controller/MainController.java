@@ -32,27 +32,38 @@ public class MainController {
 
 		LocalDate targetDate;
 		// 指定された日付がない場合は、現在の日付を基準とする
-		// 今月 or 前月 or 翌月を判定
-		if (date == null) { // 今月
-			// その月の1日を取得する
-			targetDate = LocalDate.now(); // 現在日時を取得
-			targetDate = targetDate.withDayOfMonth(1); // 現在日時からその月の1日を取得
-		} else { // 前月 or 翌月と判断
-			targetDate = date; // 引数で受け取った日付をそのまま使う
+		if (date == null) {
+			// 現在日時を取得
+			targetDate = LocalDate.now();
+			// 現在日時からその月の1日を取得
+			targetDate = targetDate.withDayOfMonth(1);
+		} else {
+			// 引数で受け取った日付をそのまま使う
+			targetDate = date;
 		}
 
 		// 当日のインスタンスを取得したあと、その月の1日のインスタンスを得る
 		LocalDate firstDayOfMonth = targetDate.withDayOfMonth(1);
 
-		// 曜日を表すDayOfWeekを取得し、上で取得したLocalDateに曜日の値（DayOfWeek#getValue)をマイナスして前月分のLocalDateを求める
+		LocalDate current;
+		
+		// 曜日を表すDayOfWeekを取得
 		DayOfWeek firstDayOfWeek = targetDate.getDayOfWeek();
-		//ここでtask用に1週目の前月分の開始日を設定
-		LocalDate first = targetDate.minusDays(firstDayOfWeek.getValue());
-		LocalDate current = targetDate.minusDays(firstDayOfWeek.getValue());
+		//もしfirstDayOfWeekが日曜日なら前月分はなし
+		if(firstDayOfWeek ==DayOfWeek.SUNDAY) {
+			current = targetDate;
+		}else {
+		// 上で取得したtargetDateに曜日の値をマイナスして前月分のLocalDateを求める
+		current = targetDate.minusDays(firstDayOfWeek.getValue());}
 
+		// ここでtask用に1週目の前月分の開始日を設定
+		LocalDate first = targetDate.minusDays(firstDayOfWeek.getValue());
+
+		// カレンダー上部に「○○年○○月」と表示
 		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy年MM月");
 		model.addAttribute("month", dateTimeFormatter.format(targetDate));
 
+		// 前月、翌月分の処理
 		model.addAttribute("prev", firstDayOfMonth.minusMonths(1));
 		model.addAttribute("next", firstDayOfMonth.plusMonths(1));
 
@@ -62,21 +73,26 @@ public class MainController {
 		List<LocalDate> week = new ArrayList<LocalDate>();
 
 		while (true) {
-			// 1日ずつ増やしてLocalDateを求めていき、2．で作成したListへ格納していき、1週間分詰めたら1．のリストへ格納する
+			// 1日ずつ増やしてLocalDateを求めていき、weekへ格納
 			week.add(current);
 			current = current.plusDays(1);
-			// 2週目以降は単純に1日ずつ日を増やしながらLocalDateを求めてListへ格納していき、
-			// 土曜日になったら1．のリストへ格納して新しいListを生成する（月末を求めるにはLocalDate#lengthOfMonth()を使う）
+			// 土曜日になって1週間分詰めたらcalenderへ格納。また新しいweekを生成する
 			if (week.size() == 7) {
 				calendar.add(week);
 				week = new ArrayList<>();
 			}
+			// 翌月の最初の土曜日を超えたらループ終了
 			if (current.compareTo(firstDayOfMonth.plusMonths(1).with(DayOfWeek.SATURDAY)) > 0) {
 				break;
 			}
 		}
-		// 最終週の翌月分をDayOfWeekの値を使って計算し、6．で生成したリストへ格納し、最後に1．で生成したリストへ格納する
+
+		// ここでtask用に最終週の翌月分の終了日を設定
+		LocalDate last = firstDayOfMonth.plusMonths(1).with(DayOfWeek.SATURDAY);
+
+		// 最終週の翌月分をweekへ格納し、calenderへ格納
 		if (!week.isEmpty()) {
+			// 最終週で翌月分を埋める日数
 			int remainDays = DayOfWeek.SATURDAY.getValue() - week.get(week.size() - 1).getDayOfWeek().getValue();
 			for (int i = 0; i < remainDays; i++) {
 				week.add(current);
@@ -84,11 +100,10 @@ public class MainController {
 			}
 			calendar.add(week);
 		}
+		// celenderモデルに設定
 		model.addAttribute("matrix", calendar);
 
-		//ここでtask用に最終週の翌月分の終了日を設定
-		LocalDate last = firstDayOfMonth.plusMonths(1).with(DayOfWeek.SATURDAY);
-
+		// taskリストを生成
 		List<Tasks> taskList = new ArrayList<Tasks>();
 
 		// adminかどうかの処理
@@ -111,6 +126,7 @@ public class MainController {
 		// 日付とタスクを紐付ける
 		MultiValueMap<LocalDate, Tasks> taskMap = new LinkedMultiValueMap<LocalDate, Tasks>();
 
+		// taskリストの数だけtaskをtaskMapに追加
 		for (Tasks task : taskList) {
 			taskMap.add(task.getDate(), task);
 		}
